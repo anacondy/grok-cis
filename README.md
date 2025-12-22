@@ -1,5 +1,7 @@
 # Grok Sissy - Archival Database
 
+🌐 **Live Site**: [https://anacondy.github.io/grok-cis/](https://anacondy.github.io/grok-cis/)
+
 ![Deploy Status](https://github.com/anacondy/grok-cis/actions/workflows/deploy.yml/badge.svg)
 
 A high-performance, archival database application for scanning and analyzing movie posters and images using Grok Vision AI. Features a cyberpunk-inspired UI optimized for high refresh rate displays (90Hz+).
