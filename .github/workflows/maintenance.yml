@@ -34,6 +34,16 @@ jobs:
           npm audit --audit-level=moderate || true
           echo "Maintenance checks complete"
 
+      - name: Verify API Key
+        run: |
+          if [ -n "$VITE_XAI_API_KEY" ]; then
+            echo "✅ VITE_XAI_API_KEY is configured"
+          else
+            echo "⚠️ VITE_XAI_API_KEY is not set - the site will run in offline mode"
+          fi
+        env:
+          VITE_XAI_API_KEY: ${{ secrets.VITE_XAI_API_KEY }}
+
       - name: Build verification
         run: npm run build
         env:
