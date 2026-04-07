@@ -31,7 +31,7 @@ const generateId = () => {
 };
 
 // --- COMPONENT: ARTIFACT CARD ---
-const ArtifactCard = ({ data, onRemove, apiKey }) => {
+const ArtifactCard = ({ data, onRemove, apiKey, provider, model }) => {
   const { id, file } = data;
   const [imagePreview, setImagePreview] = useState(null);
   const [status, setStatus] = useState('IDLE'); 
@@ -64,8 +64,8 @@ const ArtifactCard = ({ data, onRemove, apiKey }) => {
       setStatus('ERROR');
       setErrorDetails({ 
         title: "API KEY MISSING", 
-        message: "System cannot verify VITE_XAI_API_KEY in environment.", 
-        suggestion: "Check GitHub Secrets or local .env file." 
+        message: `System cannot verify ${provider === 'mistral' ? 'VITE_MISTRAL_API_KEY' : 'VITE_XAI_API_KEY'} in environment.`,
+        suggestion: "Check GitHub Secrets or local .env file."
       });
       return;
     }
@@ -93,7 +93,7 @@ const ArtifactCard = ({ data, onRemove, apiKey }) => {
       `;
 
       const payload = {
-        model: "grok-2-vision-1212", 
+        model: model || (provider === 'mistral' ? 'pixtral-12b-2409' : 'grok-2-vision-1212'),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: [{ type: "text", text: userPrompt }, { type: "image_url", image_url: { url: `data:${file.type};base64,${base64Data}`, detail: "high" } }] }
@@ -103,7 +103,11 @@ const ArtifactCard = ({ data, onRemove, apiKey }) => {
         response_format: { type: "json_object" }
       };
 
-      const response = await fetchWithTimeout("https://api.x.ai/v1/chat/completions", {
+      const apiUrl = provider === 'mistral'
+        ? "https://api.mistral.ai/v1/chat/completions"
+        : "https://api.x.ai/v1/chat/completions";
+
+      const response = await fetchWithTimeout(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
         body: JSON.stringify(payload)
@@ -220,6 +224,8 @@ const ArtifactCard = ({ data, onRemove, apiKey }) => {
 const App = () => {
   const [artifacts, setArtifacts] = useState([]);
   const [apiKey, setApiKey] = useState('');
+  const [provider, setProvider] = useState('xai');
+  const [model, setModel] = useState('grok-2-vision-1212');
   const [keyStatus, setKeyStatus] = useState('CHECKING'); 
   const canvasRef = useRef(null);
 
@@ -228,11 +234,24 @@ const App = () => {
   // API Key Detection
   useEffect(() => {
     let key = '';
+    let resolvedProvider = 'xai';
+    let resolvedModel = 'grok-2-vision-1212';
     try {
-      if (import.meta && import.meta.env) key = import.meta.env.VITE_XAI_API_KEY;
+      if (import.meta && import.meta.env) {
+        const configuredProvider = (import.meta.env.VITE_AI_PROVIDER || 'xai').toLowerCase();
+        resolvedProvider = configuredProvider === 'mistral' ? 'mistral' : 'xai';
+        resolvedModel = import.meta.env.VITE_AI_MODEL || (resolvedProvider === 'mistral' ? 'pixtral-12b-2409' : 'grok-2-vision-1212');
+        key = resolvedProvider === 'mistral'
+          ? import.meta.env.VITE_MISTRAL_API_KEY
+          : import.meta.env.VITE_XAI_API_KEY;
+      }
     } catch (e) { console.warn("Env Check Skipped"); }
 
-    if (key && key.length > 10 && !key.includes('your_xai_api_key')) {
+    setProvider(resolvedProvider);
+    setModel(resolvedModel);
+
+    const invalidPlaceholder = key.includes('your_xai_api_key') || key.includes('your_mistral_api_key');
+    if (key && key.length > 10 && !invalidPlaceholder) {
       setApiKey(key);
       setKeyStatus('FOUND');
     } else {
@@ -338,7 +357,7 @@ const App = () => {
                <span className={`px-2 py-1 rounded border ${keyStatus === 'FOUND' ? 'border-emerald-500/50 text-emerald-400 bg-emerald-950/30' : 'border-red-500/50 text-red-400 bg-red-950/30'}`}>
                  {keyStatus === 'FOUND' ? 'UPLINK_SECURE' : 'UPLINK_OFFLINE'}
                </span>
-               <span className="text-white/30">v2.2.0 // VISION_BETA</span>
+               <span className="text-white/30">v2.2.0 // {provider.toUpperCase()} // {model}</span>
              </div>
           </div>
           <div className="hidden sm:block text-right">
@@ -372,7 +391,7 @@ const App = () => {
               <AlertCircle className="text-amber-500 shrink-0 mt-1" />
               <div>
                 <h3 className="text-amber-400 font-mono font-bold tracking-wider mb-2">API KEY MISSING</h3>
-                <p className="text-sm text-amber-200/70 leading-relaxed">System cannot verify <code className="bg-black/40 px-1 rounded text-amber-300">VITE_XAI_API_KEY</code>.</p>
+                <p className="text-sm text-amber-200/70 leading-relaxed">System cannot verify <code className="bg-black/40 px-1 rounded text-amber-300">{provider === 'mistral' ? 'VITE_MISTRAL_API_KEY' : 'VITE_XAI_API_KEY'}</code>.</p>
               </div>
             </div>
           )}
@@ -380,7 +399,14 @@ const App = () => {
           {/* GRID */}
           <div className="w-full grid grid-cols-1 gap-16 md:gap-24">
              {artifacts.map((item) => (
-                <ArtifactCard key={item.id} data={item} onRemove={(idToRemove) => setArtifacts(prev => prev.filter(x => x.id !== idToRemove))} apiKey={apiKey} />
+                <ArtifactCard
+                  key={item.id}
+                  data={item}
+                  onRemove={(idToRemove) => setArtifacts(prev => prev.filter(x => x.id !== idToRemove))}
+                  apiKey={apiKey}
+                  provider={provider}
+                  model={model}
+                />
              ))}
           </div>
         </main>

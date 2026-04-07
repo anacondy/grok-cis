@@ -36,11 +36,14 @@ A high-performance, archival database application for scanning and analyzing mov
    npm install
    ```
 
-3. **Configure API Key**
+3. **Configure API Provider + Key**
    
    Create a `.env` file in the root directory:
    ```env
+   VITE_AI_PROVIDER=xai
+   VITE_AI_MODEL=grok-2-vision-1212
    VITE_XAI_API_KEY=your_xai_api_key_here
+   VITE_MISTRAL_API_KEY=your_mistral_api_key_here
    ```
 
 4. **Start development server**
@@ -61,23 +64,43 @@ npm run preview
 
 ## ⚙️ Configuration
 
-### API Key Setup
+### API Provider Setup
 
 #### Local Development
 
 Create a `.env` file in the project root:
 
 ```env
+VITE_AI_PROVIDER=xai
+VITE_AI_MODEL=grok-2-vision-1212
 VITE_XAI_API_KEY=xai-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+VITE_MISTRAL_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
+
+Use one provider at a time:
+
+- For Grok (X.AI):
+  ```env
+  VITE_AI_PROVIDER=xai
+  VITE_AI_MODEL=grok-2-vision-1212
+  VITE_XAI_API_KEY=xai-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  ```
+- For Mistral:
+  ```env
+  VITE_AI_PROVIDER=mistral
+  VITE_AI_MODEL=pixtral-12b-2409
+  VITE_MISTRAL_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  ```
 
 #### GitHub Pages Deployment
 
 1. Go to your repository **Settings** → **Secrets and variables** → **Actions**
 2. Click **New repository secret**
-3. Add secret:
-   - **Name**: `VITE_XAI_API_KEY`
-   - **Value**: Your X.AI API key
+3. Add secrets (depending on provider):
+   - `VITE_AI_PROVIDER` = `xai` or `mistral`
+   - `VITE_AI_MODEL` = your selected model
+   - `VITE_XAI_API_KEY` = your X.AI key (for Grok)
+   - `VITE_MISTRAL_API_KEY` = your Mistral key (for Mistral)
 4. Save the secret
 
 The deployment workflow will automatically use this secret during builds.
