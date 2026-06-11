@@ -1,170 +1,145 @@
-# Grok Sissy - Archival Database
+# GROK_SISSY — Archival Database
 
 🌐 **Live Site**: [https://anacondy.github.io/grok-cis/](https://anacondy.github.io/grok-cis/)
 
 ![Deploy Status](https://github.com/anacondy/grok-cis/actions/workflows/deploy.yml/badge.svg)
 
-A high-performance, archival database application for scanning and analyzing movie posters and images using Grok Vision AI. Features a cyberpunk-inspired UI optimized for high refresh rate displays (90Hz+).
+An archival database app for scanning and analyzing images using AI vision models. Features a cyberpunk-inspired UI optimized for high refresh rate displays (90Hz+). Supports multiple AI providers with automatic fallback.
 
-## ✨ Features
+---
 
-- 🤖 **AI-Powered Analysis**: Uses Grok Vision AI for intelligent image recognition
-- 🎨 **Cyberpunk UI**: Modern, immersive interface with particle effects
-- ⚡ **High Refresh Rate Optimized**: Delta-time physics engine for smooth 90Hz+ displays
-- 📱 **Progressive Web App**: Installable on mobile and desktop devices
-- 🌐 **GitHub Pages Ready**: Automated CI/CD deployment pipeline
+## AI Providers
 
-## 🖥️ Minimum Requirements
+The app supports three providers. Set `VITE_AI_PROVIDER` to choose one — or leave it unset and the app auto-detects based on which key is present (Mistral → Gemini → xAI priority).
 
-- **Browser**: Modern browser with ES2020+ support (Chrome 90+, Firefox 88+, Safari 14.1+, Edge 90+)
-- **Display**: 90Hz+ refresh rate recommended for optimal experience
-- **Internet**: Active connection for API calls
-- **API Key**: Valid X.AI API key for Grok Vision
+| Provider | Model | Env Var |
+|---|---|---|
+| **Mistral** (recommended) | `pixtral-large-latest` | `VITE_MISTRAL_API_KEY` |
+| **Gemini** | `gemini-2.0-flash` | `VITE_GEMINI_API_KEY` |
+| **xAI / Grok** | `grok-4.3` | `VITE_XAI_API_KEY` |
 
-## 🚀 Installation
+---
 
-### For Development
+## Running Locally — Step by Step
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/anacondy/grok-cis.git
-   cd grok-cis
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure API Provider + Key**
-   
-   Create a `.env` file in the root directory:
-   ```env
-   VITE_AI_PROVIDER=xai
-   VITE_AI_MODEL=grok-2-vision-1212
-   VITE_XAI_API_KEY=your_xai_api_key_here
-   VITE_MISTRAL_API_KEY=your_mistral_api_key_here
-   ```
-
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open in browser**
-   
-   Navigate to `http://localhost:5173`
-
-### For Production Build
+### 1. Clone the repository
 
 ```bash
-npm run build
-npm run preview
+git clone https://github.com/anacondy/grok-cis.git
+cd grok-cis
 ```
 
-## ⚙️ Configuration
+### 2. Install dependencies
 
-### API Provider Setup
+```bash
+npm install
+```
 
-#### Local Development
+### 3. Get an API key
 
-Create a `.env` file in the project root:
+Pick one (or more) of these providers:
+
+**Mistral (recommended — free tier available)**
+1. Go to [console.mistral.ai](https://console.mistral.ai/)
+2. Sign up and verify your email
+3. Go to **API Keys** → **Create new key**
+4. Copy the key
+
+**Gemini**
+1. Go to [aistudio.google.com](https://aistudio.google.com/app/apikey)
+2. Sign in with a Google account
+3. Click **Create API key**
+4. Copy the key
+
+**xAI / Grok**
+1. Go to [console.x.ai](https://console.x.ai/)
+2. Sign up and add credits
+3. Go to **API Keys** → create a key
+4. Copy the key
+
+### 4. Create your `.env` file
+
+In the project root, create a file called `.env`:
 
 ```env
-VITE_AI_PROVIDER=xai
-VITE_AI_MODEL=grok-2-vision-1212
-VITE_XAI_API_KEY=xai-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-VITE_MISTRAL_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# Choose your provider: mistral | gemini | xai
+VITE_AI_PROVIDER=mistral
+
+# Add the key for your chosen provider:
+VITE_MISTRAL_API_KEY=your_mistral_key_here
+# VITE_GEMINI_API_KEY=your_gemini_key_here
+# VITE_XAI_API_KEY=your_xai_key_here
 ```
 
-Use one provider at a time:
+You only need the key for the provider you're using. The `VITE_AI_MODEL` variable is optional — the app uses the latest recommended model for each provider automatically.
 
-- For Grok (X.AI):
-  ```env
-  VITE_AI_PROVIDER=xai
-  VITE_AI_MODEL=grok-2-vision-1212
-  VITE_XAI_API_KEY=xai-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  ```
-- For Mistral:
-  ```env
-  VITE_AI_PROVIDER=mistral
-  VITE_AI_MODEL=pixtral-12b-2409
-  VITE_MISTRAL_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-  ```
+### 5. Start the dev server
 
-#### GitHub Pages Deployment
+```bash
+npm run dev
+```
 
-1. Go to your repository **Settings** → **Secrets and variables** → **Actions**
-2. Click **New repository secret**
-3. Add secrets (depending on provider):
-   - `VITE_AI_PROVIDER` = `xai` or `mistral`
-   - `VITE_AI_MODEL` = your selected model
-   - `VITE_XAI_API_KEY` = your X.AI key (for Grok)
-   - `VITE_MISTRAL_API_KEY` = your Mistral key (for Mistral)
-4. Save the secret
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-The deployment workflow will automatically use this secret during builds.
+---
 
-### Getting an X.AI API Key
+## Deploying to GitHub Pages
 
-1. Visit [x.ai](https://x.ai/) and create an account
-2. Navigate to API settings
-3. Generate a new API key
-4. Copy and use in your configuration
+### 1. Fork this repository
 
-## 📸 Screenshots
+Click **Fork** at the top right of this page.
 
-### Desktop View (16:9)
-*Screenshot placeholder - Desktop interface showing the archival database with scanning capabilities*
+### 2. Enable GitHub Pages
 
-### Mobile View (20:9)
-*Screenshot placeholder - Mobile-optimized view with PWA installation prompt*
+Go to your fork → **Settings** → **Pages** → set Source to **GitHub Actions**.
 
-## 🛠️ Technology Stack
+### 3. Add your API key as a secret
 
-- **Frontend Framework**: React 18.3+
-- **Build Tool**: Vite 5.4+
-- **Styling**: Tailwind CSS 3.4+
-- **Icons**: Lucide React
-- **AI Model**: Grok Vision 2 (via X.AI API)
-- **Deployment**: GitHub Pages + Actions
+Go to **Settings** → **Secrets and variables** → **Actions** → **New repository secret**:
 
-## 📱 PWA Installation
+| Secret name | Value |
+|---|---|
+| `VITE_AI_PROVIDER` | `mistral` (or `gemini` or `xai`) |
+| `VITE_MISTRAL_API_KEY` | your Mistral key |
 
-### On Desktop
+Add whichever key matches your chosen provider.
 
-1. Open the site in Chrome/Edge
-2. Click the install icon (⊕) in the address bar
-3. Click "Install"
+### 4. Trigger a deploy
 
-### On Mobile
+Push any change to `main`, or go to **Actions** → **Deploy to GitHub Pages** → **Run workflow**.
 
-1. Open the site in Safari/Chrome
-2. Tap the share button
-3. Select "Add to Home Screen"
+Your site will be live at `https://your-username.github.io/grok-cis/` in ~2 minutes.
 
-## 🔄 CI/CD Pipeline
+---
 
-This repository uses GitHub Actions for automated deployment:
+## Features
 
-- **Deploy Workflow**: Triggers on push to `main` branch or manual dispatch
-- **Maintenance Workflow**: Runs automatically every 48 hours to check dependencies and security
+- **Multi-provider AI**: Mistral, Gemini, and xAI/Grok vision models
+- **Auto-detection**: Picks the right provider based on which API key is present
+- **Cyberpunk UI**: Dark interface with particle effects and monospace terminal aesthetic
+- **High refresh rate optimized**: Delta-time physics engine for smooth 90Hz+ displays
+- **PWA ready**: Installable on mobile and desktop
+- **Automated CI/CD**: GitHub Actions deploys on every push to `main`
 
-## 🤝 Contributing
+---
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## Tech Stack
 
-## 📄 License
+- **React 18** + **Vite 5**
+- **Tailwind CSS 3**
+- **Lucide React** icons
+- **GitHub Pages** + **GitHub Actions**
 
-This project is licensed under the terms specified in the [LICENSE](LICENSE) file.
+---
 
-## 🔒 Security
+## Security Notes
 
-- Never commit API keys to the repository
-- Use GitHub Secrets for production deployments
-- API keys are only accessible during build time
-- No client-side exposure of sensitive credentials
+- Never commit `.env` to the repository (it's in `.gitignore` already)
+- Use GitHub Secrets for production — keys are injected only at build time
+- No API keys are exposed client-side after build
 
-## 📞 Support
+---
 
-For issues, questions, or suggestions, please open an issue on GitHub.
+## License
+
+[MIT](LICENSE)
