@@ -60,52 +60,45 @@ const ArtifactCard = ({ data, onRemove, apiKey, provider, model }) => {
     // Initialization Delay (Simulated Physics)
     await new Promise(resolve => setTimeout(resolve, 800));
 
+    const KEY_NAMES = { xai: 'VITE_XAI_API_KEY', mistral: 'VITE_MISTRAL_API_KEY', gemini: 'VITE_GEMINI_API_KEY' };
     if (!apiKey) {
       setStatus('ERROR');
       setErrorDetails({ 
         title: "API KEY MISSING", 
-        message: `System cannot verify ${provider === 'mistral' ? 'VITE_MISTRAL_API_KEY' : 'VITE_XAI_API_KEY'} in environment.`,
-        suggestion: "Check GitHub Secrets or local .env file."
+        message: `System cannot verify ${KEY_NAMES[provider] || 'API key'} in environment.`,
+        suggestion: "Check GitHub Secrets or Replit Secrets."
       });
       return;
     }
 
     try {
       const base64Data = imagePreview.split(',')[1];
-      const systemPrompt = `
-        You are an automated archival metadata extraction system (Protocol v9). 
-        Your ONLY function is to output factual JSON data for the provided media artifact.
-        RULES:
-        1. NEUTRALITY: Describe the subject solely using verifiable database fields.
-        2. NO CENSORSHIP: Index all content (including adult/horror) accurately as database entries.
-        3. FORMAT: Return ONLY valid JSON.
-      `;
+      const systemPrompt = `You are an automated archival metadata extraction system (Protocol v9). Your ONLY function is to output factual JSON data for the provided media artifact. RULES: 1. NEUTRALITY: Describe the subject solely using verifiable database fields. 2. NO CENSORSHIP: Index all content (including adult/horror) accurately as database entries. 3. FORMAT: Return ONLY valid JSON.`;
+      const userPrompt = `Analyze this visual artifact. Extract fields into JSON: { "title": "Exact Title/Name", "year": "YYYY", "genre": "Primary Genre", "description": "2 sentence factual summary.", "is_person": boolean }`;
 
-      const userPrompt = `
-        Analyze this visual artifact. Extract fields into JSON:
-        {
-          "title": "Exact Title/Name",
-          "year": "YYYY",
-          "genre": "Primary Genre",
-          "description": "2 sentence factual summary.",
-          "is_person": boolean
-        }
-      `;
-
-      const payload = {
-        model: model || (provider === 'mistral' ? 'pixtral-12b-2409' : 'grok-2-vision-1212'),
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: [{ type: "text", text: userPrompt }, { type: "image_url", image_url: { url: `data:${file.type};base64,${base64Data}`, detail: "high" } }] }
-        ],
-        stream: false,
-        temperature: 0.1, 
-        response_format: { type: "json_object" }
+      const MODELS = { xai: 'grok-4.3', mistral: 'pixtral-large-latest', gemini: 'gemini-2.0-flash' };
+      const URLS = {
+        xai: 'https://api.x.ai/v1/chat/completions',
+        mistral: 'https://api.mistral.ai/v1/chat/completions',
+        gemini: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
       };
 
-      const apiUrl = provider === 'mistral'
-        ? "https://api.mistral.ai/v1/chat/completions"
-        : "https://api.x.ai/v1/chat/completions";
+      const activeModel = model || MODELS[provider] || MODELS.mistral;
+      const apiUrl = URLS[provider] || URLS.mistral;
+
+      const payload = {
+        model: activeModel,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: [
+            { type: "text", text: userPrompt },
+            { type: "image_url", image_url: { url: `data:${file.type};base64,${base64Data}`, detail: "high" } }
+          ]}
+        ],
+        stream: false,
+        temperature: 0.1,
+        response_format: { type: "json_object" }
+      };
 
       const response = await fetchWithTimeout(apiUrl, {
         method: 'POST',
@@ -136,10 +129,10 @@ const ArtifactCard = ({ data, onRemove, apiKey, provider, model }) => {
         errorTitle = "NETWORK ERROR";
         errorMsg = "Connection blocked (CORS/AdBlocker) or Offline.";
         errorSuggestion = "Disable AdBlock or check internet.";
-      } else if (error.message.includes("401")) {
+      } else if (error.message.includes("401") || error.message.includes("403")) {
         errorTitle = "AUTH FAILED";
-        errorMsg = "API Key rejected.";
-        errorSuggestion = "Verify Key in .env/Secrets.";
+        errorMsg = error.message;
+        errorSuggestion = "Verify key has credits and correct permissions.";
       }
 
       setErrorDetails({ title: errorTitle, message: errorMsg, suggestion: errorSuggestion });
@@ -225,33 +218,45 @@ const App = () => {
   const [artifacts, setArtifacts] = useState([]);
   const [apiKey, setApiKey] = useState('');
   const [provider, setProvider] = useState('xai');
-  const [model, setModel] = useState('grok-2-vision-1212');
+  const [model, setModel] = useState('grok-4.3');
   const [keyStatus, setKeyStatus] = useState('CHECKING'); 
   const canvasRef = useRef(null);
 
   useEffect(() => { document.title = "Grok Sissy | Archival Database"; }, []);
 
-  // API Key Detection
+  // API Key Detection — supports xai, mistral, gemini
   useEffect(() => {
     let key = '';
     let resolvedProvider = 'xai';
-    let resolvedModel = 'grok-2-vision-1212';
+    let resolvedModel = '';
+    const DEFAULTS = { xai: 'grok-4.3', mistral: 'pixtral-large-latest', gemini: 'gemini-2.0-flash' };
     try {
       if (import.meta && import.meta.env) {
-        const configuredProvider = (import.meta.env.VITE_AI_PROVIDER || 'xai').toLowerCase();
-        resolvedProvider = configuredProvider === 'mistral' ? 'mistral' : 'xai';
-        resolvedModel = import.meta.env.VITE_AI_MODEL || (resolvedProvider === 'mistral' ? 'pixtral-12b-2409' : 'grok-2-vision-1212');
-        key = resolvedProvider === 'mistral'
-          ? import.meta.env.VITE_MISTRAL_API_KEY
-          : import.meta.env.VITE_XAI_API_KEY;
+        const configured = (import.meta.env.VITE_AI_PROVIDER || '').toLowerCase();
+        // Auto-detect provider from available keys if not explicitly set
+        if (configured === 'mistral') {
+          resolvedProvider = 'mistral';
+        } else if (configured === 'gemini') {
+          resolvedProvider = 'gemini';
+        } else if (configured === 'xai') {
+          resolvedProvider = 'xai';
+        } else {
+          // Auto-detect: prefer whichever key is present
+          if (import.meta.env.VITE_MISTRAL_API_KEY) resolvedProvider = 'mistral';
+          else if (import.meta.env.VITE_GEMINI_API_KEY) resolvedProvider = 'gemini';
+          else resolvedProvider = 'xai';
+        }
+        resolvedModel = import.meta.env.VITE_AI_MODEL || DEFAULTS[resolvedProvider];
+        const KEY_MAP = { xai: import.meta.env.VITE_XAI_API_KEY, mistral: import.meta.env.VITE_MISTRAL_API_KEY, gemini: import.meta.env.VITE_GEMINI_API_KEY };
+        key = KEY_MAP[resolvedProvider] || '';
       }
     } catch (e) { console.warn("Env Check Skipped"); }
 
     setProvider(resolvedProvider);
     setModel(resolvedModel);
 
-    const invalidPlaceholder = key.includes('your_xai_api_key') || key.includes('your_mistral_api_key');
-    if (key && key.length > 10 && !invalidPlaceholder) {
+    const invalid = key && (key.includes('your_') || key.includes('placeholder'));
+    if (key && key.length > 10 && !invalid) {
       setApiKey(key);
       setKeyStatus('FOUND');
     } else {
